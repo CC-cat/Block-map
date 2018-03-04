@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 	<meta cahrset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="description" content="Block-map">
-  <meta name="keywords" content="Block-map"/>
-  <meta name="author" content="CCcat"/>
+	<meta name="keywords" content="Block-map" />
+	<meta name="author" content="CCcat" />
 	<title>CCcat-Block-map</title>
 	<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+	<link rel="icon" type="image/x-icon" href="favicon.ico">
 	<link rel="stylesheet" type="text/css" href="css/style.css">
 	<script src="js/jquery-1.12.4.min.js"></script>
 	<script src="js/knockout-3.2.0.js"></script>
@@ -17,48 +18,88 @@
 	<script src="js/setMap.js"></script>
 	<script src="js/model.js"></script>
 </head>
-<body>
-<div class="container">
-	<div class="options-box">
-		<div class="btn-list-box">
-			<span class="btn-list list-open"></span>
-		</div>
-		<h1 class="label-title">Search The Area</h1>
-		<div class="search-box">
-			<form class="new-searching">
-				<input class="search" id="zoom-to-area-text" size="26" autocomplete="off" type="text" placeholder="请输入地点关键词" value="">
-				<a href="javascript:;" class="search-go" id="zoom-to-area" ></a>
-			</form>
-		</div>
-		<div class="btn-contorl">
-			<input class="currentBtn" id="show-listings" type="button" value="Show Listings">
-			<input id="hide-listings" type="button" value="Hide Listings">
-		</div>
-		<!-- list -->
-		<div class="list-box">
-			<ul class="fileList" data-bind="foreach:locations">
-				<li data-bind="text:title,click:function(){viewModel.selectPosition(title)}"></li>
-			</ul>
-		</div>
-	</div>
-	<div id="map"></div>
-</div>
 
-	<script async defer src=
-		"https://maps.googleapis.com/maps/api/js?key=AIzaSyBpeRngl5RPjmB8e86-F5sGrh6yHVtfi1M&v=3&callback=initMap">
+<body>
+	<div class="container">
+		<div class="options-box">
+			<div class="btn-list-box">
+				<span class="btn-list list-open"></span>
+			</div>
+			<h1 class="label-title">Search The Area</h1>
+			<div class="search-box">
+				<form class="new-searching">
+					<input class="search" id="zoom-to-area-text" size="26" data-bind="value:positionName" autocomplete="off" type="text" placeholder="请输入地点关键词" value="">
+					<a href="javascript:;" class="search-go" id="zoom-to-area" data-bind="click:function(){viewModel.findPosition()}"></a>
+				</form>
+			</div>
+			<div class="btn-contorl">
+				<!-- <input class="currentBtn" id="show-listings" type="button" value="Show Listings">
+				<input id="hide-listings" type="button" value="Hide Listings"> -->
+			</div>
+			<!-- list -->
+			<div class="list-box">
+				<ul class="fileList" data-bind="foreach:locations">
+					<li data-bind="text:title,click:function(){viewModel.selectPosition(title)}"></li>
+				</ul>
+			</div>
+		</div>
+		<div id="map"></div>
+	</div>
+
+	<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBpeRngl5RPjmB8e86-F5sGrh6yHVtfi1M&v=3&callback=initMap" onerror="mapErrorHandler()"> />
 	</script>
 	<script type="text/javascript">
+		function mapErrorHandler(){
+			alert("地图加载错误。");
+		}
 		let viewModel = {
 			locations: ko.observable(locations),
 			displayFilter: ko.observable(false),
+			positionName: ko.observable(''),
 			selectPosition: function(title) {
 				showListings();
-				HideListings(title);
-			}
+				hideListings(title);
+			},
+			findPosition: function() {
+
+
+
+				let positionName = this.positionName();
+				if (positionName.length > 0) {
+
+					let _tempArray = this.locations().filter(function(item) {
+						if (item.title == positionName) {
+							return item;
+						}
+
+					});
+
+					this.locations(_tempArray);
+					let locations = this.locations();
+					for (let i of locations) {
+						if (i.title === positionName) {
+							hideListings(i.title);
+						}
+					}
+				} else {
+					this.locations(locations);
+				}
+
+			},
+
+			// self.filteredNames = ko.computed(function() {
+			//     if (!self.query()) {
+			//         return names;
+			//     } else {
+			//         return names.filter(function(name) {
+			//             return name.toLowerCase().indexOf(self.query().toLowerCase()) != -1;
+			//         });
+			//     }
+			// });
 		}
 		ko.applyBindings(viewModel);
 
-		function HideListings(i) {
+		function hideListings(i) {
 			for (var a of markers) {
 				if (i != a.title) {
 					a.setMap(null);
@@ -66,6 +107,38 @@
 			}
 		};
 
+		function showListings(title) {
+			var largeInfowindow = new google.maps.InfoWindow();
+		    var bounds = new google.maps.LatLngBounds();
+		    let defaultIcon = makeMarkerIcon('0091ff');
+		    let highlightedIcon = makeMarkerIcon('FFFF24');
+		    for (var i = 0; i < locations.length; i++) {
+		        var position = locations[i].location;
+		        var title = locations[i].title;
+		        var marker = new google.maps.Marker({
+		            position: position,
+		            map: map,
+		            title: title,
+		            animation: google.maps.Animation.DROP,
+		            id: i,
+		            icon: defaultIcon
+		        });
+		        markers.push(marker);
+		        bounds.extend(marker.position);
+		        marker.addListener('click', function() {
+		            populateInfoWindow(this, largeInfowindow);
+		        });
+		        marker.addListener('mouseover', function() {
+		            this.setIcon(highlightedIcon);
+		        });
+		        marker.addListener('mouseout', function() {
+		            this.setIcon(defaultIcon);
+		        });
+		    }
+		    map.fitBounds(bounds);
+		};
+
 	</script>
 </body>
+
 </html>

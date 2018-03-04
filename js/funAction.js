@@ -2,6 +2,10 @@ $(function(){
   btnListShow();
   btnMarkShow();
 
+  // $(".search-go").on("click",function(){
+  //    findName();
+  // });
+
 });
 
 
@@ -28,3 +32,24 @@ function btnMarkShow(){
     $(this).addClass("currentBtn");
   });
 }
+
+// function findName(){
+//     var localName = $("#zoom-to-area-text").val;
+//
+//     if (localName.length > 0) {
+//         for (let i in this.locations) {
+//             if (i.title === localName) {
+//                 hideListings(title);
+//             }
+//         }
+//
+//     }
+// }
+//
+// function hideListings(title) {
+//     console.log(1);
+//     console.log(markers);
+//     for (var i of markers) {
+//         i.setMap(null);
+//     }
+// };
